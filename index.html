@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tablero de indicadores de ciberseguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#121A16; --ink-2:#4B5A53; --ink-3:#6E7F77;
+  --navy:#13201A; --steel:#2E7D3A; --accent:#3DA935;
+  --paper:#FFFFFF; --surface:#F3F7F3; --surface-2:#E6EFE7; --rule:#D2DED4;
+  --ok:#1F7A35; --ok-bg:#E6F3E8;
+  --warn:#8F5A0B; --warn-bg:#FAF0DC;
+  --bad:#9E2A1F; --bad-bg:#FAE8E5;
+  --none:#6E7F77; --none-bg:#EDF1EE;
+  --focus:#3DA935;
+  --shadow:0 1px 2px rgba(18,26,22,.07);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#E7F0E9; --ink-2:#A6B7AC; --ink-3:#85978C;
+    --navy:#8FD98A; --steel:#7ACB74; --accent:#4FBF44;
+    --paper:#0F1713; --surface:#141D18; --surface-2:#1D2822; --rule:#2B3A32;
+    --ok:#6FD38A; --ok-bg:#12291B;
+    --warn:#E6B45C; --warn-bg:#2C2314;
+    --bad:#F09183; --bad-bg:#2E1815;
+    --none:#85978C; --none-bg:#1B2620;
+    --shadow:0 1px 2px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#E7F0E9; --ink-2:#A6B7AC; --ink-3:#85978C;
+  --navy:#8FD98A; --steel:#7ACB74; --accent:#4FBF44;
+  --paper:#0F1713; --surface:#141D18; --surface-2:#1D2822; --rule:#2B3A32;
+  --ok:#6FD38A; --ok-bg:#12291B;
+  --warn:#E6B45C; --warn-bg:#2C2314;
+  --bad:#F09183; --bad-bg:#2E1815;
+  --none:#85978C; --none-bg:#1B2620;
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--surface); color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-variant-numeric:tabular-nums lining-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+
+/* ---------- Estructura ---------- */
+.shell{max-width:1220px;margin:0 auto;padding:0 20px 80px}
+.masthead{
+  background:linear-gradient(180deg,#0E1511 0%,#16241C 100%); color:#fff;
+  border-bottom:3px solid var(--accent);
+}
+.masthead-in{max-width:1220px;margin:0 auto;padding:22px 20px 0}
+.mast-title{margin:0;font-size:1.35rem;font-weight:600;letter-spacing:-.01em}
+.mast-sub{margin:4px 0 0;font-size:.875rem;color:#A9C9AC;max-width:62ch}
+.mast-meta{display:flex;flex-wrap:wrap;gap:10px 18px;margin:14px 0 0}
+.mast-meta label{font-size:.75rem;color:#A9C9AC;display:block;margin-bottom:3px}
+.mast-meta input{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.28);
+  color:#fff;border-radius:3px;padding:5px 9px;font-size:.85rem;min-width:190px
+}
+.mast-meta input::placeholder{color:#7E9B83}
+
+.tabs{display:flex;gap:2px;margin-top:18px}
+.tab{
+  background:transparent;border:0;border-bottom:3px solid transparent;
+  color:#B7D3BA;padding:10px 18px 11px;cursor:pointer;font-size:.92rem;font-weight:500;
+  border-radius:3px 3px 0 0;margin-bottom:-3px
+}
+.tab:hover{color:#fff;background:rgba(255,255,255,.07)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--navy);border-bottom-color:var(--accent);font-weight:600}
+:root[data-theme="dark"] .tab[aria-selected="true"],
+:root:not([data-theme="light"]) .tab[aria-selected="true"]{color:var(--ink)}
+
+/* ---------- Resumen ---------- */
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:4px;box-shadow:var(--shadow)}
+.summary{margin:22px 0 0;padding:20px 22px}
+.summary h2{margin:0 0 2px;font-size:1.02rem;font-weight:600}
+.summary p.lede{margin:0 0 16px;color:var(--ink-2);font-size:.875rem}
+.readout{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.readout .big{font-size:2.9rem;font-weight:600;letter-spacing:-.03em;line-height:1}
+.readout .of{color:var(--ink-2);font-size:.95rem}
+.segbar{display:flex;height:12px;border-radius:2px;overflow:hidden;margin:16px 0 10px;background:var(--surface-2)}
+.segbar span{display:block;transition:width .35s ease}
+.seg-ok{background:var(--ok)} .seg-warn{background:var(--warn)}
+.seg-bad{background:var(--bad)} .seg-none{background:var(--none);opacity:.45}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:.8rem;color:var(--ink-2)}
+.legend b{font-weight:600;color:var(--ink)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:baseline}
+
+/* ---------- Controles ---------- */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 12px}
+.toolbar .grow{flex:1 1 auto}
+select,.btn{
+  background:var(--paper);border:1px solid var(--rule);border-radius:3px;
+  padding:7px 12px;font-size:.85rem;cursor:pointer
+}
+.btn:hover{border-color:var(--accent);color:var(--steel)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#08120C}
+.btn-primary:hover{background:var(--steel);border-color:var(--steel);color:#fff}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:.85rem;color:var(--ink-2);cursor:pointer}
+
+/* ---------- Libro de indicadores ---------- */
+.group{margin-top:26px}
+.group-head{display:flex;align-items:baseline;gap:12px;padding:0 0 7px;border-bottom:2px solid var(--accent)}
+.group-head h3{margin:0;font-size:.98rem;font-weight:600;color:var(--steel)}
+.group-head .count{font-size:.78rem;color:var(--ink-3)}
+
+.row{
+  display:grid;
+  grid-template-columns:78px minmax(190px,1.5fr) 104px 1fr 132px;
+  gap:14px;align-items:center;
+  padding:13px 14px;border:1px solid var(--rule);border-top:0;background:var(--paper)
+}
+.group .row:first-of-type{border-top:1px solid var(--rule)}
+.row:nth-of-type(even){background:var(--surface)}
+.row.clickable{cursor:pointer}
+.row.clickable:hover{background:var(--surface-2)}
+.code{font-size:.74rem;font-weight:600;color:var(--steel);letter-spacing:.01em}
+.iname{font-size:.9rem;font-weight:500}
+.iprio{font-size:.72rem;color:var(--ink-3);margin-top:2px}
+.value{text-align:right;font-size:1.32rem;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.value small{font-size:.72rem;font-weight:500;color:var(--ink-2);margin-left:2px}
+.value.novalue{font-size:.85rem;font-weight:500;color:var(--ink-3)}
+.track{height:7px;background:var(--surface-2);border-radius:2px;overflow:hidden;position:relative}
+.fill{height:100%;transition:width .4s ease}
+.meta-line{font-size:.75rem;color:var(--ink-2);margin-top:6px;display:flex;justify-content:space-between;gap:10px}
+.pill{
+  justify-self:end;font-size:.76rem;font-weight:600;padding:4px 10px;border-radius:2px;
+  border:1px solid transparent;white-space:nowrap
+}
+.p-ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok)}
+.p-warn{color:var(--warn);background:var(--warn-bg);border-color:var(--warn)}
+.p-bad{color:var(--bad);background:var(--bad-bg);border-color:var(--bad)}
+.p-none{color:var(--none);background:var(--none-bg);border-color:var(--rule)}
+.f-ok{background:var(--ok)} .f-warn{background:var(--warn)} .f-bad{background:var(--bad)}
+
+.detail{
+  grid-column:1/-1;border-top:1px dashed var(--rule);margin-top:12px;padding-top:12px;
+  font-size:.84rem;color:var(--ink-2);display:grid;gap:9px
+}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+.detail dt{font-weight:600;color:var(--ink)}
+.detail dd{margin:0}
+.detail .action{
+  border-left:3px solid var(--accent);background:var(--surface-2);
+  padding:9px 12px;border-radius:0 3px 3px 0;color:var(--ink)
+}
+
+/* ---------- Captura ---------- */
+.intro{padding:20px 22px;margin-top:22px}
+.intro h2{margin:0 0 6px;font-size:1.02rem}
+.intro p{margin:0 0 8px;color:var(--ink-2);font-size:.88rem;max-width:74ch}
+.intro ol{margin:8px 0 0;padding-left:20px;color:var(--ink-2);font-size:.88rem;max-width:74ch}
+.intro li{margin-bottom:4px}
+
+.card{padding:18px 20px;margin-top:14px}
+.card-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between;
+  padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.card-head h4{margin:0;font-size:.97rem;font-weight:600}
+.card-head .code{display:block;margin-bottom:2px}
+.what{font-size:.84rem;color:var(--ink-2);margin:10px 0 0;max-width:80ch}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;margin-top:14px}
+.field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}
+.field input[type=number]{
+  width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:3px;
+  background:var(--paper);font-size:1rem;font-variant-numeric:tabular-nums
+}
+.field input:focus{border-color:var(--accent)}
+.help{font-size:.79rem;color:var(--ink-2);margin-top:6px;line-height:1.45}
+.help .warn-note{color:var(--bad);font-weight:500}
+.srcline{font-size:.79rem;color:var(--ink-2);margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule)}
+.srcline b{color:var(--ink);font-weight:600}
+.live{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:14px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:10px 14px}
+.live .lv{font-size:1.4rem;font-weight:600;letter-spacing:-.02em}
+.live .lt{font-size:.8rem;color:var(--ink-2)}
+
+dialog{border:1px solid var(--rule);border-radius:5px;background:var(--paper);color:var(--ink);
+  max-width:620px;width:92%;padding:22px;box-shadow:0 12px 40px rgba(16,24,40,.22)}
+dialog::backdrop{background:rgba(16,24,40,.5)}
+dialog h3{margin:0 0 8px;font-size:1rem}
+dialog p{margin:0 0 10px;font-size:.86rem;color:var(--ink-2)}
+dialog textarea{width:100%;height:190px;border:1px solid var(--rule);border-radius:3px;
+  padding:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.78rem;background:var(--surface)}
+.dlg-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+.saved{font-size:.78rem;color:var(--ink-3)}
+.hidden{display:none !important}
+.empty{padding:34px 22px;text-align:center;color:var(--ink-2);font-size:.9rem}
+.foot{margin-top:34px;padding-top:14px;border-top:1px solid var(--rule);font-size:.78rem;color:var(--ink-3);max-width:80ch}
+
+
+/* ---------- Gráficos ---------- */
+.charts{margin-top:18px;padding:20px 22px}
+.charts h3{margin:0 0 3px;font-size:.95rem;font-weight:600}
+.charts .sub{margin:0 0 14px;font-size:.8rem;color:var(--ink-2)}
+.chart-grid{display:grid;grid-template-columns:230px 1fr;gap:28px;align-items:start}
+.donut-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.donut-val{font-size:26px;font-weight:600;fill:var(--ink);font-variant-numeric:tabular-nums}
+.donut-cap{font-size:10.5px;fill:var(--ink-2)}
+.donut-key{display:grid;gap:5px;width:100%;font-size:.78rem;color:var(--ink-2)}
+.donut-key span{display:flex;align-items:center;gap:7px}
+.donut-key b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.fnbars{display:grid;gap:11px}
+.fnbar .top{display:flex;justify-content:space-between;gap:12px;font-size:.82rem;margin-bottom:4px}
+.fnbar .top b{font-weight:600;font-variant-numeric:tabular-nums}
+.fnbar .track{height:9px}
+.trend{margin-top:22px;padding-top:18px;border-top:1px solid var(--rule)}
+.trend svg{width:100%;height:auto;display:block}
+.axis{stroke:var(--rule);stroke-width:1}
+.gridline{stroke:var(--rule);stroke-width:1;stroke-dasharray:3 4;opacity:.7}
+.axis-txt{font-size:10.5px;fill:var(--ink-3)}
+.series-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.series-area{fill:var(--accent);opacity:.1}
+.series-dot{fill:var(--paper);stroke:var(--accent);stroke-width:2.5}
+.series-val{font-size:11px;font-weight:600;fill:var(--ink);font-variant-numeric:tabular-nums}
+.chart-empty{padding:26px 0;text-align:center;color:var(--ink-2);font-size:.85rem}
+
+/* ---------- Histórico ---------- */
+.htable{width:100%;border-collapse:collapse;font-size:.84rem}
+.htable th,.htable td{border:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:middle}
+.htable th{background:var(--surface-2);font-weight:600;font-size:.78rem}
+.htable td.n{text-align:right;font-variant-numeric:tabular-nums}
+.htable tr:nth-child(even) td{background:var(--surface)}
+.scrollx{overflow-x:auto;border:1px solid var(--rule);border-radius:4px}
+.scrollx .htable{border-collapse:separate;border-spacing:0}
+.scrollx .htable th,.scrollx .htable td{border:0;border-bottom:1px solid var(--rule);white-space:nowrap}
+.scrollx .htable td.kpi,.scrollx .htable th.kpi{position:sticky;left:0;background:var(--paper);border-right:1px solid var(--rule);white-space:normal;min-width:230px}
+.scrollx .htable th.kpi{background:var(--surface-2)}
+.cell-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.store-box{padding:18px 22px;margin-top:16px}
+.store-box h3{margin:0 0 6px;font-size:.95rem}
+.store-box p{margin:0 0 10px;font-size:.83rem;color:var(--ink-2);max-width:78ch}
+.store-state{font-size:.8rem;padding:8px 12px;border-radius:3px;background:var(--surface);border:1px solid var(--rule);margin-bottom:12px}
+.store-state b{font-weight:600}
+@media (max-width:760px){ .chart-grid{grid-template-columns:1fr} }
+
+@media (max-width:860px){
+  .row{grid-template-columns:1fr 1fr;gap:8px}
+  .code{grid-column:1/2}.pill{grid-column:2/3;justify-self:end}
+  .iname{grid-column:1/-1}.value{grid-column:1/-1;text-align:left}
+  .bar-wrap{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+
+@media print{
+  body{background:#fff}
+  .masthead{background:#0E1511 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tabs,.toolbar,.no-print{display:none !important}
+  .panel,.row{break-inside:avoid;box-shadow:none}
+  .group{break-inside:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <h1 class="mast-title">Tablero de indicadores de ciberseguridad</h1>
+    <p class="mast-sub">21 indicadores de gestión alineados a NIST CSF 2.0, ISO/IEC 27001:2022 y CIS Controls v8.1. Capture los datos de origen y el tablero calcula el cumplimiento.</p>
+    <div class="mast-meta">
+      <div><label for="org">Organización evaluada</label><input id="org" type="text" placeholder="Nombre de la organización"></div>
+      <div><label for="periodo">Periodo medido</label><input id="periodo" type="text" placeholder="Ej. 3.er trimestre 2026"></div>
+      <div><label for="corte">Fecha de corte</label><input id="corte" type="date"></div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-dash" role="tab" aria-selected="true" aria-controls="view-dash">Tablero</button>
+      <button class="tab" id="tab-input" role="tab" aria-selected="false" aria-controls="view-input">Captura de datos</button>
+      <button class="tab" id="tab-hist" role="tab" aria-selected="false" aria-controls="view-hist">Histórico</button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- ============ MÓDULO 1 ============ -->
+  <section id="view-dash" role="tabpanel" aria-labelledby="tab-dash">
+
+    <div class="panel summary">
+      <h2>Estado del programa</h2>
+      <p class="lede">Indicadores dentro de la meta aprobada, sobre el total con datos capturados.</p>
+      <div class="readout">
+        <span class="big num" id="sum-big">—</span>
+        <span class="of" id="sum-of">sin datos capturados</span>
+      </div>
+      <div class="segbar" id="segbar" aria-hidden="true">
+        <span class="seg-ok" style="width:0"></span>
+        <span class="seg-warn" style="width:0"></span>
+        <span class="seg-bad" style="width:0"></span>
+        <span class="seg-none" style="width:100%"></span>
+      </div>
+      <div class="legend">
+        <span><i class="dot seg-ok"></i><b id="c-ok">0</b> dentro de meta</span>
+        <span><i class="dot seg-warn"></i><b id="c-warn">0</b> en riesgo</span>
+        <span><i class="dot seg-bad"></i><b id="c-bad">0</b> fuera de meta</span>
+        <span><i class="dot seg-none"></i><b id="c-none">21</b> sin datos</span>
+      </div>
+    </div>
+
+    <div class="panel charts">
+      <div class="chart-grid">
+        <div class="donut-col">
+          <h3>Estado de los 21 indicadores</h3>
+          <p class="sub">Distribución al corte capturado.</p>
+          <div class="donut-wrap">
+            <div id="chart-donut"></div>
+            <div class="donut-key" id="donut-key"></div>
+          </div>
+        </div>
+        <div>
+          <h3>Cumplimiento por función</h3>
+          <p class="sub">Indicadores dentro de meta sobre los que tienen datos, en cada función del marco NIST.</p>
+          <div class="fnbars" id="chart-fn"></div>
+        </div>
+      </div>
+      <div class="trend">
+        <h3>Evolución del cumplimiento</h3>
+        <p class="sub">Porcentaje de indicadores dentro de meta en cada periodo cerrado.</p>
+        <div id="chart-trend"></div>
+      </div>
+    </div>
+
+    <div class="toolbar no-print">
+      <select id="f-fn" aria-label="Filtrar por función"></select>
+      <select id="f-status" aria-label="Filtrar por estado">
+        <option value="all">Todos los estados</option>
+        <option value="ok">Dentro de meta</option>
+        <option value="warn">En riesgo</option>
+        <option value="bad">Fuera de meta</option>
+        <option value="none">Sin datos</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="f-prio"> Solo prioridad crítica y alta</label>
+      <span class="grow"></span>
+      <button class="btn" id="btn-print">Imprimir o guardar en PDF</button>
+      <button class="btn" id="btn-go-input">Ir a captura</button>
+    </div>
+
+    <div id="ledger"></div>
+    <div class="panel empty hidden" id="ledger-empty"></div>
+
+    <p class="foot">Los umbrales precargados son valores de referencia de industria. Sustitúyalos por los umbrales que su Comité de Seguridad haya aprobado formalmente; un indicador sin umbral autorizado no es auditable.</p>
+  </section>
+
+  <!-- ============ MÓDULO 2 ============ -->
+  <section id="view-input" role="tabpanel" aria-labelledby="tab-input" class="hidden">
+
+    <div class="panel intro">
+      <h2>Cómo capturar los datos</h2>
+      <p>Cada indicador necesita dos cifras. Debajo de cada campo se explica exactamente qué debe contar, dónde obtener el dato y cuál es el error más frecuente al calcularlo.</p>
+      <ol>
+        <li>Use la misma fecha de corte para todos los indicadores y anótela arriba.</li>
+        <li>Capture cifras del periodo completo, no acumuladas del año, salvo que el campo indique otra cosa.</li>
+        <li>Si no tiene un dato, deje el campo vacío. El indicador aparecerá como «sin datos» en lugar de mostrar una cifra incorrecta.</li>
+        <li>Conserve la consulta o el reporte del que obtuvo cada cifra: es la evidencia que pedirá el auditor.</li>
+      </ol>
+      <div class="toolbar no-print" style="margin-bottom:0">
+        <button class="btn" id="btn-export">Exportar respaldo</button>
+        <button class="btn" id="btn-import">Importar respaldo</button>
+        <button class="btn" id="btn-clear">Borrar todo</button>
+        <span class="grow"></span>
+        <span class="saved" id="saved-note">Los datos se guardan en este navegador</span>
+      </div>
+    </div>
+
+    <div id="forms"></div>
+  </section>
+
+  <!-- ============ MÓDULO 3 ============ -->
+  <section id="view-hist" role="tabpanel" aria-labelledby="tab-hist" class="hidden">
+
+    <div class="panel store-box">
+      <h3>Dónde se guardan los datos</h3>
+      <p>La herramienta mantiene una base de datos local dentro del navegador de este equipo. Si además vincula un archivo, cada cambio se escribe en un <code>.json</code> de la carpeta que elija, que puede ser la misma donde guardó este archivo <code>.html</code>: ese archivo es su respaldo y puede copiarse, versionarse o compartirse con el equipo.</p>
+      <div class="store-state" id="store-state">Verificando el almacenamiento…</div>
+      <div class="toolbar no-print" style="margin:0">
+        <button class="btn btn-primary" id="btn-link">Vincular archivo de datos</button>
+        <button class="btn hidden" id="btn-relink">Reconectar archivo</button>
+        <button class="btn hidden" id="btn-unlink">Desvincular archivo</button>
+      </div>
+    </div>
+
+    <div class="panel store-box">
+      <h3>Periodos cerrados</h3>
+      <p>Al cerrar un periodo se guarda una fotografía de las 21 cifras capturadas. Los periodos cerrados alimentan la gráfica de evolución y la matriz comparativa.</p>
+      <div class="toolbar no-print" style="margin:0 0 14px">
+        <button class="btn btn-primary" id="btn-snapshot">Cerrar periodo actual</button>
+        <span class="grow"></span>
+      </div>
+      <div id="hist-periods"></div>
+    </div>
+
+    <div class="panel store-box">
+      <h3>Matriz comparativa por indicador</h3>
+      <p>Valor de cada indicador en los periodos cerrados, del más antiguo al más reciente.</p>
+      <div id="hist-matrix"></div>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <h3 id="dlg-title">Respaldo</h3>
+  <p id="dlg-text"></p>
+  <textarea id="dlg-area" spellcheck="false"></textarea>
+  <div class="dlg-actions">
+    <button class="btn" id="dlg-cancel">Cerrar</button>
+    <button class="btn btn-primary hidden" id="dlg-ok">Cargar datos</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ===================== Catálogo de indicadores ===================== */
+const FN = {
+  GOB: "Gobierno y gestión de riesgos",
+  IDE: "Identificación de activos y exposición",
+  PRO: "Protección",
+  DET: "Detección",
+  RES: "Respuesta",
+  REC: "Recuperación y continuidad"
+};
+
+const K = [
+{ id:"k01", code:"KPI-CIB-01", name:"Cierre de riesgos cibernéticos", fn:"GOB", prio:"Alta",
+  unit:"%", mode:"pct", dir:"up", target:95,
+  what:"Mide si las decisiones de tratamiento de riesgo se convierten en acciones concluidas dentro del plazo comprometido, y no solo en acuerdos documentales.",
+  num:{ label:"Hallazgos de riesgo alto o crítico cerrados dentro del plazo",
+        help:"Cuente únicamente los que tienen evidencia de validación y fecha de cierre igual o anterior a la fecha comprometida. Un hallazgo «en proceso» no se cuenta como cerrado." },
+  den:{ label:"Hallazgos de riesgo alto o crítico cuyo plazo vencía en el periodo",
+        help:"Solo los que vencían dentro del periodo medido, no todos los que están abiertos. Reste los que obtuvieron prórroga aprobada en acta y los que tienen aceptación formal de riesgo firmada." },
+  src:"Registro de riesgos o plataforma GRC, plan de tratamiento, actas del Comité de Seguridad y tickets de la acción técnica.",
+  act:"Escale al Comité cada riesgo alto vencido sin cierre ni aceptación formal. Un riesgo vencido sin decisión documentada es hallazgo de auditoría, no un retraso operativo." },
+
+{ id:"k02", code:"KPI-CIB-02", name:"Cobertura del inventario de activos", fn:"IDE", prio:"Alta",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Es el indicador raíz: los denominadores de vulnerabilidades, configuración, EDR y registros dependen de que el inventario sea confiable.",
+  num:{ label:"Activos críticos en el inventario con propietario y datos completos",
+        help:"Deben tener los campos obligatorios llenos: propietario, clasificación de la información, criticidad, ambiente y responsable técnico. Un registro sin propietario no cuenta." },
+  den:{ label:"Activos críticos detectados por descubrimiento independiente",
+        help:"Obtenga esta cifra de un barrido de red, agentes e inventarios de nube, nunca del propio inventario. Si usa la CMDB como denominador, el resultado siempre dará 100 % y será falso." },
+  src:"CMDB, herramienta de descubrimiento de red, consola EDR, Active Directory o Entra ID e inventarios de nube (AWS Config, Azure Resource Graph).",
+  act:"No publique los indicadores 04, 06, 09 y 10 hasta alcanzar 95 %: sus denominadores heredan el error de este inventario." },
+
+{ id:"k03", code:"KPI-CIB-03", name:"Exposición de la superficie de ataque", fn:"IDE", prio:"Alta",
+  unit:"%", mode:"pct", dir:"down", target:5,
+  what:"Proporción de lo que está publicado a Internet que un atacante podría aprovechar hoy.",
+  num:{ label:"Activos expuestos con falla explotable o sin propietario identificado",
+        help:"Sume los que tienen vulnerabilidad con exploit público conocido y los que no tienen dueño en el inventario. Si un activo cumple ambas condiciones, cuéntelo una sola vez." },
+  den:{ label:"Total de activos accesibles desde Internet",
+        help:"Incluya direcciones IP públicas, subdominios, servicios publicados en nube y aplicaciones con dominio corporativo, aunque no aparezcan en el inventario oficial." },
+  extra:{ label:"De los anteriores, cuántos no tienen propietario (opcional)",
+          help:"Este subconjunto es el de mayor riesgo: nadie los parcha ni los monitorea." },
+  src:"Plataforma de gestión de superficie de ataque externa (EASM) o escaneo perimetral, zonas DNS, registros de certificados y el inventario de IP públicas.",
+  act:"Asigne propietario a los activos huérfanos en 15 días o retírelos de Internet." },
+
+{ id:"k04", code:"KPI-CIB-04", name:"Antigüedad de vulnerabilidades críticas", fn:"PRO", prio:"Alta",
+  unit:"%", mode:"pct", dir:"down", target:5,
+  what:"Porción de la deuda de vulnerabilidades que ya rebasó el plazo interno de remediación.",
+  num:{ label:"Vulnerabilidades críticas abiertas que superan el plazo de remediación",
+        help:"Mida los días desde la PRIMERA detección, no desde la última corrida del escáner. Si toma la última detección, la deuda se rejuvenece sola en cada escaneo y el dato pierde validez." },
+  den:{ label:"Total de vulnerabilidades críticas abiertas al corte",
+        help:"Solo activos dentro del alcance definido. Excluya las que tienen excepción formal vigente y regístrelas por separado." },
+  extra:{ label:"Mediana de días de antigüedad (opcional)",
+          help:"Use la mediana, no el promedio: unos pocos hallazgos muy antiguos distorsionan el promedio y ocultan la distribución real." },
+  src:"Escáner de vulnerabilidades con histórico de primera detección, sistema de tickets de remediación y el acuerdo de nivel de servicio aprobado.",
+  act:"Aísle el 10 % más antiguo en un plan de choque con fecha firme y analice por qué se retrasó: ventanas de mantenimiento, dependencia de proveedor o falta de responsable técnico." },
+
+{ id:"k05", code:"KPI-CIB-05", name:"Cumplimiento de vulnerabilidades explotadas (KEV)", fn:"PRO", prio:"Crítica",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Vulnerabilidades con explotación activa comprobada en el mundo real, atendidas dentro del plazo. Se gestiona por excepción: una sola pendiente puede ser material.",
+  num:{ label:"Vulnerabilidades KEV remediadas o mitigadas dentro del plazo",
+        help:"Cuente las parchadas con reescaneo que confirme la corrección, más las mitigadas con un control compensatorio formalmente aprobado." },
+  den:{ label:"Vulnerabilidades KEV aplicables identificadas en el entorno",
+        help:"Cruce el catálogo CISA KEV contra los resultados del escáner por número de CVE. «Aplicable» significa que la tecnología está presente y la configuración la hace explotable." },
+  src:"Catálogo CISA KEV con su fecha de descarga, resultados del escáner, registro de cambios y aprobaciones de controles compensatorios.",
+  act:"Cualquier KEV sin mitigar debe escalarse a dirección con fecha firme. La aceptación tácita de una vulnerabilidad activamente explotada es indefendible ante el regulador y ante la aseguradora." },
+
+{ id:"k06", code:"KPI-CIB-06", name:"Cumplimiento de configuración segura", fn:"PRO", prio:"Media",
+  unit:"%", mode:"pct", dir:"up", target:90,
+  what:"Activos que cumplen la línea base de endurecimiento aprobada, es decir, sin parámetros inseguros de fábrica ni desvíos de configuración.",
+  num:{ label:"Activos que cumplen al menos el 95 % de la línea base aprobada",
+        help:"Es una cuenta por activo, no un promedio de controles. Un servidor que cumple 80 % de la línea base no se cuenta aquí." },
+  den:{ label:"Activos dentro del alcance de la línea base",
+        help:"Todos los activos a los que aplica ese estándar de endurecimiento, incluidos los que tienen excepción técnica vigente." },
+  extra:{ label:"Desviaciones críticas abiertas (opcional)",
+          help:"Cifrado deshabilitado, autenticación débil, protocolos obsoletos. Se atienden por excepción sin importar el porcentaje global." },
+  src:"Herramienta de gestión de configuración segura (CIS-CAT, SCM, Defender for Cloud), plataforma de administración (Intune, SCCM, Ansible) y el repositorio de líneas base aprobadas.",
+  act:"Incorpore la línea base a la imagen de despliegue: corrige la causa, no el síntoma." },
+
+{ id:"k07", code:"KPI-CIB-07", name:"Cobertura de MFA resistente a suplantación", fn:"PRO", prio:"Crítica",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Cuentas protegidas con factores que un atacante no puede interceptar en tiempo real.",
+  num:{ label:"Cuentas elegibles con método resistente registrado y exigido por política",
+        help:"Solo cuentan FIDO2 o WebAuthn, llaves físicas, Windows Hello for Business y certificados. No cuentan SMS, llamada, correo ni códigos temporales (TOTP). Deben cumplirse dos condiciones: método registrado y política que lo exija." },
+  den:{ label:"Total de cuentas humanas activas elegibles",
+        help:"Excluya las cuentas de servicio, que se gobiernan con otro control, y documente esa exclusión. Valide el total contra el padrón de personal activo." },
+  extra:{ label:"Cuentas privilegiadas con método resistente (opcional)",
+          help:"Segmento de mayor impacto. Debería llegar a 100 % antes que el resto de la organización." },
+  src:"Proveedor de identidad (Entra ID, Okta, Ping), políticas de acceso condicional con su alcance, padrón de Recursos Humanos e inventario de cuentas privilegiadas.",
+  act:"Deshabilite por política el registro de métodos no resistentes, para que el indicador no retroceda." },
+
+{ id:"k08", code:"KPI-CIB-08", name:"Revisión de accesos privilegiados", fn:"PRO", prio:"Media",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Cuentas con privilegio elevado revisadas y recertificadas dentro del ciclo establecido.",
+  num:{ label:"Cuentas privilegiadas con decisión registrada en el ciclo",
+        help:"La decisión debe ser explícita: mantener, reducir o revocar, con nombre de quien la tomó. Una revisión sin decisión registrada no cuenta." },
+  den:{ label:"Total de cuentas privilegiadas identificadas",
+        help:"Incluya administradores de dominio y de nube, accesos a bases de datos productivas, cuentas de emergencia y accesos privilegiados de terceros." },
+  extra:{ label:"Accesos revocados o reducidos tras la revisión (opcional)",
+          help:"Si este número es cero con cobertura del 100 %, la revisión probablemente se hizo por trámite y no con criterio real." },
+  src:"Solución PAM y plataforma de gobierno de identidades, grupos privilegiados de Active Directory o Entra ID y bitácoras de cambios de membresía.",
+  act:"Aplique revocación automática cuando el responsable no responde tras el segundo recordatorio, con procedimiento documentado de restablecimiento." },
+
+{ id:"k09", code:"KPI-CIB-09", name:"Cobertura de detección en puntos finales", fn:"DET", prio:"Crítica",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Equipos con agente EDR realmente vivo, no solo instalado.",
+  num:{ label:"Equipos con agente instalado, activo y con telemetría en las últimas 72 horas",
+        help:"Deben cumplirse las tres condiciones. Un agente instalado pero silencioso no protege y además puede indicar manipulación." },
+  den:{ label:"Equipos elegibles según el inventario",
+        help:"Tome el total del inventario o del directorio, no de la consola del EDR: si el agente no está instalado, el equipo no aparece en esa consola y la cobertura saldría 100 % de forma falsa." },
+  src:"Consola EDR o XDR con estado de salud del agente, CMDB, Active Directory, plataforma de gestión de dispositivos y bitácoras de DHCP.",
+  act:"Investigue los agentes silenciosos como posible manipulación antes de tratarlos como falla operativa, e implemente control de admisión a red." },
+
+{ id:"k10", code:"KPI-CIB-10", name:"Cobertura de registros en el SIEM", fn:"DET", prio:"Crítica",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Sistemas críticos que sí pueden investigarse forensemente porque envían sus bitácoras obligatorias.",
+  num:{ label:"Sistemas críticos que envían todas sus fuentes obligatorias, con ingesta verificada",
+        help:"La cobertura parcial no cuenta: si un sistema envía autenticación pero no cambios de configuración, es no conforme. Verifique también que el evento llegue completo y con hora sincronizada." },
+  den:{ label:"Total de sistemas críticos en alcance",
+        help:"Tome la lista del inventario de activos críticos, no del inventario de fuentes del SIEM." },
+  extra:{ label:"Fuentes con interrupción mayor a 24 horas en el periodo (opcional)",
+          help:"Revela si existe monitoreo del propio monitoreo." },
+  src:"Inventario de fuentes y reportes de salud del SIEM, CMDB, catálogo de casos de uso de detección y configuración de sincronización horaria (NTP).",
+  act:"Alerte por ausencia de eventos en cada fuente y condicione el paso a producción de todo sistema crítico a su integración previa con el SIEM." },
+
+{ id:"k11", code:"KPI-CIB-11", name:"Tiempo medio de detección", fn:"DET", prio:"Media",
+  unit:"h", mode:"avg", dir:"down", target:24,
+  what:"Cuántas horas transcurren, en promedio, entre el inicio de la actividad maliciosa y su detección.",
+  num:{ label:"Suma de horas de detección de todos los incidentes del periodo",
+        help:"Por cada incidente: horas entre el inicio de la actividad maliciosa y la alerta que originó la investigación. Sume todas esas horas y capture el total. El punto de inicio se toma de la primera evidencia verificable en la telemetría, documentada en el informe de causa raíz." },
+  den:{ label:"Número de incidentes validados en el periodo",
+        help:"Solo incidentes confirmados; descarte falsos positivos. Idealmente mida por separado los de severidad alta." },
+  src:"Marcas de tiempo del SIEM y del SOAR, sistema de gestión de incidentes, informes forenses y línea de tiempo del EDR.",
+  act:"Si un tipo de amenaza concentra los tiempos altos, construya casos de uso específicos para ella en lugar de optimizar el promedio general." },
+
+{ id:"k12", code:"KPI-CIB-12", name:"Tiempo medio de contención", fn:"RES", prio:"Media",
+  unit:"h", mode:"avg", dir:"down", target:4,
+  what:"Qué tan rápido se detiene la propagación una vez confirmado el incidente.",
+  num:{ label:"Suma de horas de contención de todos los incidentes del periodo",
+        help:"Por cada incidente: horas entre la confirmación de que es un incidente real y el momento en que se detuvo la propagación (aislamiento del equipo, cuenta deshabilitada, ruta bloqueada). No incluya la erradicación ni la recuperación." },
+  den:{ label:"Número de incidentes validados en el periodo",
+        help:"Use el mismo universo de incidentes que en el tiempo de detección." },
+  src:"Bitácoras de acciones del SOAR y del EDR, sistema de gestión de incidentes y registros de firewall, proxy y proveedor de identidad.",
+  act:"Compare contención automatizada contra manual: la diferencia suele ser el caso de negocio para extender los libros de respuesta automatizados." },
+
+{ id:"k13", code:"KPI-CIB-13", name:"Tiempo medio de recuperación", fn:"REC", prio:"Media",
+  unit:"h", mode:"avg", dir:"down", target:8,
+  what:"Horas para devolver el servicio a la normalidad después de contener el incidente.",
+  num:{ label:"Suma de horas de recuperación de los incidentes con afectación a servicios",
+        help:"Por cada incidente: horas entre la contención y el momento en que el servicio opera con funcionalidad y rendimiento normales, confirmado por el dueño del servicio y no por el equipo técnico." },
+  den:{ label:"Número de incidentes que afectaron algún servicio",
+        help:"Solo los que degradaron o interrumpieron un servicio. Los incidentes contenidos sin impacto operativo no entran en este cálculo." },
+  src:"Sistema de gestión de incidentes y de cambios, herramientas de monitoreo de disponibilidad, catálogo de servicios con RTO aprobado.",
+  act:"Contraste cada caso contra el RTO comprometido de ese servicio: un promedio aceptable puede esconder incumplimientos de continuidad." },
+
+{ id:"k14", code:"KPI-CIB-14", name:"Recurrencia de incidentes", fn:"RES", prio:"Media",
+  unit:"%", mode:"pct", dir:"down", target:10,
+  what:"Incidentes que vuelven a ocurrir por una causa raíz que ya se conocía. Mide si las acciones correctivas realmente funcionan.",
+  num:{ label:"Incidentes del periodo vinculados a una causa raíz ya identificada",
+        help:"Cuente el incidente aunque la acción correctiva nunca se haya implementado: precisamente eso es lo que el indicador debe revelar. Use una ventana de 12 meses desde el cierre de la causa original." },
+  den:{ label:"Total de incidentes validados en el periodo",
+        help:"Mismo universo de incidentes confirmados que usó en los tiempos de respuesta." },
+  src:"Catálogo de causas raíz, sistema de gestión de incidentes, registro de acciones correctivas y no conformidades, informes posteriores al incidente.",
+  act:"Separe cuántos casos provienen de acciones comprometidas y no ejecutadas: si predominan, el problema es de seguimiento y gobierno, no técnico." },
+
+{ id:"k15", code:"KPI-CIB-15", name:"Éxito de pruebas de restauración", fn:"REC", prio:"Alta",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Confirma que los respaldos sirven para recuperar de verdad, no solo que el trabajo de respaldo terminó sin error.",
+  num:{ label:"Pruebas de restauración exitosas con validación firmada por el dueño del dato",
+        help:"Se restauró el dato, se verificó su integridad y funcionalidad, y el dueño del dato o del proceso firmó la validación. La confirmación de la consola de respaldo no es suficiente." },
+  den:{ label:"Pruebas de restauración programadas en el periodo",
+        help:"Son las programadas, no las ejecutadas. Una prueba omitida cuenta como fallida; de lo contrario el indicador premiaría no hacer nada." },
+  src:"Consola de respaldos (Veeam, Commvault, Rubrik, Azure Backup), calendario aprobado de pruebas y actas de prueba firmadas.",
+  act:"Ante un respaldo corrupto, extienda la verificación a todo el conjunto de ese sistema. Un respaldo no probado es una hipótesis de recuperación, no un control." },
+
+{ id:"k16", code:"KPI-CIB-16", name:"Logro de objetivos de recuperación", fn:"REC", prio:"Alta",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Recuperaciones que cumplieron a la vez el tiempo máximo de interrupción (RTO) y la pérdida máxima de datos tolerada (RPO).",
+  num:{ label:"Recuperaciones que cumplieron RTO y RPO simultáneamente",
+        help:"Debe cumplirse lo uno y lo otro. Recuperar a tiempo pero perdiendo más datos de los tolerados es incumplimiento." },
+  den:{ label:"Recuperaciones evaluadas en el periodo",
+        help:"Incluya pruebas planificadas y recuperaciones reales derivadas de incidentes; distíngalas en su evidencia." },
+  src:"Catálogo de servicios con RTO y RPO aprobados derivados del análisis de impacto al negocio, actas de pruebas de continuidad y bitácoras de restauración.",
+  act:"Si la infraestructura no puede sostener el RPO comprometido, súbase la frecuencia de respaldo o renegocie el objetivo formalmente. Mantenerlo en papel es un riesgo aceptado sin documentar." },
+
+{ id:"k17", code:"KPI-CIB-17", name:"Aseguramiento de proveedores", fn:"GOB", prio:"Media",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Proveedores críticos con debida diligencia de ciberseguridad vigente y concluida.",
+  num:{ label:"Proveedores críticos con debida diligencia vigente y concluida",
+        help:"Vigente significa evaluación de los últimos 12 meses, o 24 si el proveedor presenta certificación ISO 27001 o informe SOC 2 Tipo II aplicable al servicio contratado. Concluida significa cuestionario respondido, evidencias revisadas y plan de remediación acordado: un cuestionario recibido sin analizar no cuenta." },
+  den:{ label:"Total de proveedores críticos identificados",
+        help:"Criticidad por criterios objetivos: acceso a datos, conectividad a su red, soporte a procesos críticos y dificultad de sustitución. Valide el universo contra el sistema de compras, no solo contra el registro de terceros." },
+  src:"Registro maestro de terceros, expedientes de evaluación, certificaciones vigentes, repositorio contractual y sistema de compras.",
+  act:"Convierta la evaluación de seguridad en requisito bloqueante del alta de proveedores, para eliminar la reincidencia estructural." },
+
+{ id:"k18", code:"KPI-CIB-18", name:"Aseguramiento de la cadena de software", fn:"GOB", prio:"Media",
+  unit:"%", mode:"pct", dir:"up", target:100,
+  what:"Software crítico del que se conoce su origen y sus componentes internos, condición para responder en horas ante la divulgación de una vulnerabilidad de biblioteca.",
+  num:{ label:"Software crítico con inventario de componentes (SBOM) vigente y procedencia verificada",
+        help:"Deben cumplirse ambas. El SBOM debe corresponder a la versión desplegada, no a una anterior; la procedencia se verifica con firma digital, atestación de compilación o descarga desde repositorio autorizado." },
+  den:{ label:"Total de software crítico en producción",
+        help:"Aplicaciones de negocio, componentes de infraestructura, bibliotecas de terceros en sistemas expuestos y herramientas con privilegios elevados." },
+  src:"Repositorio de artefactos y canalización CI/CD, herramienta de análisis de composición de software, repositorio de SBOM e inventario de aplicaciones.",
+  act:"Genere el SBOM de forma obligatoria en la compilación interna y exíjalo contractualmente al proveedor de software crítico en la siguiente renovación." },
+
+{ id:"k19", code:"KPI-CIB-19", name:"Configuraciones deficientes en nube", fn:"PRO", prio:"Alta",
+  unit:"%", mode:"pct", dir:"down", target:2,
+  what:"Recursos de nube que incumplen la línea base de seguridad aprobada.",
+  num:{ label:"Recursos de nube que incumplen la línea base aprobada",
+        help:"Capture el total de hallazgos abiertos al corte. Conserve aparte el desglose por severidad: un 3 % de hallazgos informativos no es lo mismo que un 3 % con almacenamiento público expuesto." },
+  den:{ label:"Total de recursos de nube evaluados",
+        help:"Verifique que la herramienta cubra todas las suscripciones, cuentas y regiones, incluidas las de desarrollo y las heredadas de adquisiciones. Un alcance incompleto mejora artificialmente el resultado." },
+  extra:{ label:"Días de permanencia mediana de los hallazgos críticos (opcional)",
+          help:"En entornos dinámicos este dato importa más que el porcentaje: mide cuánto tiempo estuvo abierta la exposición." },
+  src:"Plataforma CSPM (Wiz, Prisma Cloud, Defender for Cloud, Security Hub), servicios nativos de cumplimiento, análisis de infraestructura como código e inventario de suscripciones.",
+  act:"Automatice la remediación de las reglas críticas y desplace el control a la fase de despliegue con políticas preventivas, en lugar de corregir en producción." },
+
+{ id:"k20", code:"KPI-CIB-20", name:"Tasa de reporte de phishing", fn:"PRO", prio:"Media",
+  unit:"%", mode:"pct", dir:"up", target:40,
+  what:"Proporción de simulaciones que los colaboradores reportan por el canal oficial. Mide detección temprana, no solo concientización.",
+  num:{ label:"Simulaciones reportadas por el canal oficial",
+        help:"Solo las reportadas con el botón de reporte o al buzón institucional, dentro de la ventana definida. Un aviso verbal al jefe no cuenta." },
+  den:{ label:"Correos de simulación efectivamente entregados",
+        help:"Entregados, no enviados. Los que bloqueó el filtro nunca llegaron al usuario y, si los incluye, el indicador se distorsiona a la baja." },
+  extra:{ label:"Usuarios que hicieron clic (opcional)",
+          help:"Permite calcular la razón reporte contra clic, que es el dato más útil: mide si la organización detecta más rápido de lo que cae." },
+  src:"Plataforma de simulación (KnowBe4, Proofpoint, Defender for Office), registros del botón de reporte, registros de entrega de la pasarela de correo y directorio organizacional.",
+  act:"Atienda de forma dirigida a quienes entregaron credenciales y verifique que sus cuentas tengan MFA resistente a suplantación." },
+
+{ id:"k21", code:"KPI-CIB-21", name:"Exposición a IA no autorizada", fn:"GOB", prio:"Media",
+  unit:"%", mode:"pct", dir:"down", target:5,
+  what:"Eventos de datos sensibles dirigidos a herramientas de inteligencia artificial que la organización no ha aprobado.",
+  num:{ label:"Eventos con datos sensibles hacia servicios de IA no aprobados",
+        help:"Requiere un catálogo de herramientas de IA aprobadas: sin él no puede determinarse qué es «no aprobado» y el indicador no es calculable. Clasifique aparte por tipo de dato: código fuente, información comercial, datos personales." },
+  den:{ label:"Total de eventos de fuga de datos detectados en el periodo",
+        help:"Todos los eventos que disparó su solución de prevención de fuga de datos, para dimensionar qué parte del problema corresponde a la IA." },
+  extra:{ label:"Usuarios únicos involucrados (opcional)",
+          help:"Un solo usuario con alto volumen distorsiona la tendencia si solo mira el número de eventos." },
+  src:"Plataforma CASB o SSE, solución de prevención de fuga de datos, registros de proxy y DNS, catálogo de herramientas de IA aprobadas y política de uso.",
+  act:"Los eventos con datos personales se tratan como incidentes de privacidad, no como métrica. Ofrecer una herramienta de IA aprobada reduce más la exposición que bloquear, porque el bloqueo desplaza la actividad a equipos personales sin visibilidad." }
+];
+
+/* ===================== Almacenamiento ===================== */
+const STORE_KEY = "kpi-cib-v1";
+const IDB_NAME = "boomslang-kpi", IDB_STORE = "kv";
+let data = { meta:{org:"",periodo:"",corte:""}, values:{}, history:[] };
+let fileHandle = null, fileLinked = false, filePending = false, saveTimer = null;
+
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open(IDB_NAME,1);
+    r.onupgradeneeded = ()=> r.result.createObjectStore(IDB_STORE);
+    r.onsuccess = ()=> res(r.result);
+    r.onerror = ()=> rej(r.error);
+  });
+}
+async function idbGet(k){
+  try{ const db = await idbOpen();
+    return await new Promise((res,rej)=>{
+      const q = db.transaction(IDB_STORE,"readonly").objectStore(IDB_STORE).get(k);
+      q.onsuccess = ()=> res(q.result); q.onerror = ()=> rej(q.error);
+    });
+  }catch(e){ return undefined; }
+}
+async function idbSet(k,v){
+  try{ const db = await idbOpen();
+    await new Promise((res,rej)=>{
+      const q = db.transaction(IDB_STORE,"readwrite").objectStore(IDB_STORE).put(v,k);
+      q.onsuccess = ()=> res(); q.onerror = ()=> rej(q.error);
+    });
+  }catch(e){}
+}
+async function idbDel(k){
+  try{ const db = await idbOpen();
+    await new Promise((res)=>{
+      const q = db.transaction(IDB_STORE,"readwrite").objectStore(IDB_STORE).delete(k);
+      q.onsuccess = ()=> res(); q.onerror = ()=> res();
+    });
+  }catch(e){}
+}
+
+function normalize(o){
+  if(!o || typeof o!=="object") return null;
+  return {
+    meta: Object.assign({org:"",periodo:"",corte:""}, o.meta||{}),
+    values: o.values || {},
+    history: Array.isArray(o.history) ? o.history : []
+  };
+}
+function weight(o){
+  if(!o) return -1;
+  return (o.history?o.history.length:0)*1000 + Object.keys(o.values||{}).length;
+}
+function richest(a,b){ return weight(b) >= weight(a) ? (b||a) : a; }
+
+async function load(){
+  let best = null;
+  try{ const raw = localStorage.getItem(STORE_KEY); if(raw) best = normalize(JSON.parse(raw)); }catch(e){}
+  best = richest(best, normalize(await idbGet("state")));
+
+  fileHandle = await idbGet("fileHandle");
+  if(fileHandle){
+    try{
+      const perm = await fileHandle.queryPermission({mode:"readwrite"});
+      if(perm === "granted"){
+        fileLinked = true;
+        const txt = await (await fileHandle.getFile()).text();
+        if(txt.trim()) best = richest(best, normalize(JSON.parse(txt)));
+      }else{
+        filePending = true;
+      }
+    }catch(e){ fileHandle = null; }
+  }
+  if(best) data = best;
+}
+
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }catch(e){}
+  idbSet("state", JSON.parse(JSON.stringify(data)));
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(writeFile, 500);
+  updateStoreState();
+}
+
+async function writeFile(){
+  if(!fileLinked || !fileHandle) return;
+  try{
+    const w = await fileHandle.createWritable();
+    await w.write(JSON.stringify(data, null, 2));
+    await w.close();
+  }catch(e){
+    fileLinked = false; filePending = true; updateStoreState();
+  }
+}
+
+function fsSupported(){ return typeof window.showSaveFilePicker === "function"; }
+
+function updateStoreState(){
+  const el = document.getElementById("store-state");
+  const note = document.getElementById("saved-note");
+  const bLink = document.getElementById("btn-link"), bRe = document.getElementById("btn-relink"), bUn = document.getElementById("btn-unlink");
+  if(!el) return;
+  const n = data.history.length;
+  const hist = n ? " · " + n + " periodo" + (n>1?"s":"") + " cerrado" + (n>1?"s":"") : "";
+  if(fileLinked && fileHandle){
+    el.innerHTML = "<b>Archivo vinculado:</b> " + fileHandle.name + ". Cada cambio se escribe en ese archivo y también en este navegador" + hist + ".";
+  }else if(filePending && fileHandle){
+    el.innerHTML = "<b>Archivo vinculado pero sin permiso en esta sesión.</b> Pulse «Reconectar archivo» para que el navegador vuelva a autorizar la escritura" + hist + ".";
+  }else if(fsSupported()){
+    el.innerHTML = "<b>Guardado en este navegador.</b> Vincule un archivo para conservar también una copia en disco" + hist + ".";
+  }else{
+    el.innerHTML = "<b>Guardado en este navegador.</b> Este navegador no permite escribir archivos desde la página; use «Exportar respaldo» en el módulo de captura" + hist + ".";
+  }
+  if(bLink) bLink.classList.toggle("hidden", !fsSupported() || fileLinked || filePending);
+  if(bRe) bRe.classList.toggle("hidden", !filePending);
+  if(bUn) bUn.classList.toggle("hidden", !(fileLinked || filePending));
+  if(note) note.textContent = fileLinked ? ("Guardando en " + fileHandle.name) : "Los datos se guardan en este navegador";
+}
+function val(id,f){ const v = (data.values[id]||{})[f]; return (v===""||v===undefined||v===null)?null:Number(v); }
+
+/* ===================== Cálculo ===================== */
+function compute(k){
+  const a = val(k.id,"num"), b = val(k.id,"den");
+  if(a===null || b===null || !isFinite(a) || !isFinite(b) || b<=0) return {status:"none", value:null, pct:0};
+  const value = k.mode==="pct" ? (a/b)*100 : (a/b);
+  let status, pct;
+  if(k.dir==="up"){
+    pct = Math.max(0, Math.min(100, (value/k.target)*100));
+    status = value >= k.target ? "ok" : (value >= k.target*0.9 ? "warn" : "bad");
+  }else{
+    pct = value<=0 ? 100 : Math.max(0, Math.min(100, (k.target/value)*100));
+    status = value <= k.target ? "ok" : (value <= k.target*1.6 ? "warn" : "bad");
+  }
+  return {status, value, pct};
+}
+const fmt = (v,u)=> u==="%" ? v.toFixed(1) : v.toFixed(1);
+const unitLabel = u => u==="%" ? "%" : "h";
+const targetText = k => (k.dir==="up"?"≥ ":"≤ ") + k.target + (k.unit==="%"?" %":" h");
+const STATUS_TXT = {ok:"Dentro de meta", warn:"En riesgo", bad:"Fuera de meta", none:"Sin datos"};
+
+/* ===================== Módulo 1: tablero ===================== */
+function renderSummary(){
+  const c = {ok:0,warn:0,bad:0,none:0};
+  K.forEach(k=>{ c[compute(k).status]++; });
+  const withData = c.ok+c.warn+c.bad;
+  document.getElementById("c-ok").textContent = c.ok;
+  document.getElementById("c-warn").textContent = c.warn;
+  document.getElementById("c-bad").textContent = c.bad;
+  document.getElementById("c-none").textContent = c.none;
+
+  const big = document.getElementById("sum-big"), of = document.getElementById("sum-of");
+  if(withData===0){
+    big.textContent = "—";
+    of.textContent = "Capture los datos en el módulo de captura para ver el cumplimiento";
+  }else{
+    big.textContent = c.ok + " de " + withData;
+    of.textContent = "indicadores dentro de meta · " + Math.round(c.ok/withData*100) + " % de cumplimiento" +
+                     (c.none ? " · " + c.none + " sin datos" : "");
+  }
+  const segs = document.getElementById("segbar").children;
+  const t = K.length;
+  segs[0].style.width = (c.ok/t*100)+"%";
+  segs[1].style.width = (c.warn/t*100)+"%";
+  segs[2].style.width = (c.bad/t*100)+"%";
+  segs[3].style.width = (c.none/t*100)+"%";
+}
+
+function ledgerRow(k){
+  const r = compute(k);
+  const row = document.createElement("div");
+  row.className = "row clickable";
+  row.tabIndex = 0;
+  row.setAttribute("role","button");
+  row.setAttribute("aria-expanded","false");
+
+  const valHtml = r.value===null
+    ? '<div class="value novalue">Sin datos</div>'
+    : '<div class="value num">'+fmt(r.value,k.unit)+'<small>'+unitLabel(k.unit)+'</small></div>';
+
+  row.innerHTML =
+    '<div class="code">'+k.code+'</div>'+
+    '<div><div class="iname">'+k.name+'</div><div class="iprio">Prioridad '+k.prio.toLowerCase()+' · '+FN[k.fn]+'</div></div>'+
+    valHtml+
+    '<div class="bar-wrap"><div class="track"><div class="fill '+(r.status==="none"?"":"f-"+r.status)+'" style="width:'+(r.status==="none"?0:r.pct)+'%"></div></div>'+
+      '<div class="meta-line"><span>Meta '+targetText(k)+'</span><span>'+(r.value===null?"":Math.round(r.pct)+" % de la meta")+'</span></div></div>'+
+    '<div class="pill p-'+r.status+'">'+STATUS_TXT[r.status]+'</div>';
+
+  const det = document.createElement("div");
+  det.className = "detail hidden";
+  const a = val(k.id,"num"), b = val(k.id,"den"), x = k.extra ? val(k.id,"extra") : null;
+  det.innerHTML =
+    '<div>'+k.what+'</div>'+
+    '<dl>'+
+      '<dt>Datos capturados</dt><dd>'+
+        (a===null||b===null ? "Aún no se capturan las cifras de este indicador."
+          : k.num.label+": <span class=\"num\">"+a.toLocaleString("es-MX")+"</span> · "+k.den.label+": <span class=\"num\">"+b.toLocaleString("es-MX")+"</span>"+
+            (x!==null && x!==undefined ? " · "+k.extra.label.replace(" (opcional)","")+": <span class=\"num\">"+x.toLocaleString("es-MX")+"</span>" : ""))+
+      '</dd>'+
+      '<dt>Fuentes de evidencia</dt><dd>'+k.src+'</dd>'+
+    '</dl>'+
+    (r.status==="bad"||r.status==="warn" ? '<div class="action"><b>Acción recomendada.</b> '+k.act+'</div>' : '');
+  row.appendChild(det);
+
+  const toggle = ()=>{
+    const open = det.classList.toggle("hidden")===false;
+    row.setAttribute("aria-expanded", open?"true":"false");
+  };
+  row.addEventListener("click", toggle);
+  row.addEventListener("keydown", e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggle(); } });
+  return row;
+}
+
+function renderLedger(){
+  const fFn = document.getElementById("f-fn").value;
+  const fSt = document.getElementById("f-status").value;
+  const fPr = document.getElementById("f-prio").checked;
+  const host = document.getElementById("ledger");
+  host.innerHTML = "";
+  let shown = 0;
+
+  Object.keys(FN).forEach(fnKey=>{
+    if(fFn!=="all" && fFn!==fnKey) return;
+    const items = K.filter(k=>k.fn===fnKey).filter(k=>{
+      if(fPr && !(k.prio==="Crítica"||k.prio==="Alta")) return false;
+      if(fSt!=="all" && compute(k).status!==fSt) return false;
+      return true;
+    });
+    if(!items.length) return;
+    shown += items.length;
+    const g = document.createElement("section");
+    g.className = "group";
+    g.innerHTML = '<div class="group-head"><h3>'+FN[fnKey]+'</h3><span class="count">'+items.length+' indicador'+(items.length>1?"es":"")+'</span></div>';
+    items.forEach(k=> g.appendChild(ledgerRow(k)));
+    host.appendChild(g);
+  });
+
+  const empty = document.getElementById("ledger-empty");
+  if(shown===0){
+    empty.textContent = "Ningún indicador coincide con los filtros aplicados. Cambie el estado o la función para volver a verlos.";
+    empty.classList.remove("hidden");
+  }else{
+    empty.classList.add("hidden");
+  }
+}
+
+/* ===================== Módulo 2: captura ===================== */
+function fieldHtml(k, key, def){
+  const cur = (data.values[k.id]||{})[key];
+  return '<div class="field">'+
+    '<label for="'+k.id+'-'+key+'">'+def.label+'</label>'+
+    '<input type="number" min="0" step="any" inputmode="decimal" id="'+k.id+'-'+key+'" data-k="'+k.id+'" data-f="'+key+'" value="'+(cur===undefined?"":cur)+'" placeholder="0">'+
+    '<p class="help">'+def.help+'</p>'+
+  '</div>';
+}
+
+function renderForms(){
+  const host = document.getElementById("forms");
+  host.innerHTML = "";
+  Object.keys(FN).forEach(fnKey=>{
+    const items = K.filter(k=>k.fn===fnKey);
+    if(!items.length) return;
+    const g = document.createElement("section");
+    g.className = "group";
+    g.innerHTML = '<div class="group-head"><h3>'+FN[fnKey]+'</h3><span class="count">'+items.length+' indicador'+(items.length>1?"es":"")+'</span></div>';
+    items.forEach(k=>{
+      const card = document.createElement("div");
+      card.className = "panel card";
+      card.innerHTML =
+        '<div class="card-head"><div><span class="code">'+k.code+'</span><h4>'+k.name+'</h4></div>'+
+          '<span class="iprio">Meta '+targetText(k)+'</span></div>'+
+        '<p class="what">'+k.what+'</p>'+
+        '<div class="fields">'+
+          fieldHtml(k,"num",k.num)+
+          fieldHtml(k,"den",k.den)+
+          (k.extra ? fieldHtml(k,"extra",k.extra) : "")+
+        '</div>'+
+        '<p class="srcline"><b>De dónde sacar estos datos.</b> '+k.src+'</p>'+
+        '<div class="live" id="live-'+k.id+'"></div>';
+      g.appendChild(card);
+    });
+    host.appendChild(g);
+  });
+  K.forEach(updateLive);
+}
+
+function updateLive(k){
+  const el = document.getElementById("live-"+k.id);
+  if(!el) return;
+  const r = compute(k);
+  if(r.value===null){
+    el.innerHTML = '<span class="lt">Capture ambas cifras para calcular el indicador.</span>';
+    return;
+  }
+  el.innerHTML = '<span class="lv num">'+fmt(r.value,k.unit)+' '+unitLabel(k.unit)+'</span>'+
+    '<span class="pill p-'+r.status+'">'+STATUS_TXT[r.status]+'</span>'+
+    '<span class="lt">Meta '+targetText(k)+'</span>';
+}
+
+
+/* ===================== Gráficos ===================== */
+function counts(){
+  const c = {ok:0,warn:0,bad:0,none:0};
+  K.forEach(k=> c[compute(k).status]++);
+  return c;
+}
+function currentPct(){
+  const c = counts(), wd = c.ok+c.warn+c.bad;
+  return wd ? Math.round(c.ok/wd*100) : null;
+}
+
+function renderDonut(){
+  const host = document.getElementById("chart-donut");
+  const key = document.getElementById("donut-key");
+  if(!host) return;
+  const c = counts(), total = K.length;
+  const segs = [
+    {k:"ok",   label:"Dentro de meta", v:c.ok,   color:"var(--ok)"},
+    {k:"warn", label:"En riesgo",      v:c.warn, color:"var(--warn)"},
+    {k:"bad",  label:"Fuera de meta",  v:c.bad,  color:"var(--bad)"},
+    {k:"none", label:"Sin datos",      v:c.none, color:"var(--none)"}
+  ];
+  const R = 54, C = 2*Math.PI*R;
+  let off = 0, arcs = "";
+  segs.forEach(sg=>{
+    const len = sg.v/total*C;
+    if(len > 0){
+      arcs += '<circle cx="80" cy="80" r="'+R+'" fill="none" stroke="'+sg.color+'" stroke-width="20"'+
+              (sg.k==="none"?' opacity="0.35"':'')+
+              ' stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'"></circle>';
+    }
+    off += len;
+  });
+  const pct = currentPct();
+  host.innerHTML =
+    '<svg viewBox="0 0 160 160" width="168" height="168" role="img" aria-label="Distribución de indicadores por estado">'+
+      '<circle cx="80" cy="80" r="'+R+'" fill="none" stroke="var(--surface-2)" stroke-width="20"></circle>'+
+      '<g transform="rotate(-90 80 80)">'+arcs+'</g>'+
+      '<text x="80" y="78" text-anchor="middle" class="donut-val">'+(pct===null?"—":pct+" %")+'</text>'+
+      '<text x="80" y="95" text-anchor="middle" class="donut-cap">cumplimiento</text>'+
+    '</svg>';
+  key.innerHTML = segs.map(sg=>
+    '<span><i class="dot" style="background:'+sg.color+';'+(sg.k==="none"?"opacity:.45":"")+'"></i>'+sg.label+'<b>'+sg.v+'</b></span>').join("");
+}
+
+function renderFnBars(){
+  const host = document.getElementById("chart-fn");
+  if(!host) return;
+  host.innerHTML = Object.keys(FN).map(fnKey=>{
+    const items = K.filter(k=>k.fn===fnKey).map(compute);
+    const wd = items.filter(r=>r.status!=="none").length;
+    const ok = items.filter(r=>r.status==="ok").length;
+    const pct = wd ? Math.round(ok/wd*100) : 0;
+    const cls = !wd ? "" : (pct>=90 ? "f-ok" : (pct>=60 ? "f-warn" : "f-bad"));
+    return '<div class="fnbar">'+
+      '<div class="top"><span>'+FN[fnKey]+'</span>'+
+        '<b>'+(wd ? ok+" de "+wd : "sin datos")+'</b></div>'+
+      '<div class="track"><div class="fill '+cls+'" style="width:'+(wd?pct:0)+'%"></div></div></div>';
+  }).join("");
+}
+
+function trendSeries(){
+  const pts = data.history.map(h=>({label:h.label, pct:h.pct}));
+  const now = currentPct();
+  if(now!==null) pts.push({label:"Actual", pct:now, live:true});
+  return pts;
+}
+
+function renderTrend(){
+  const host = document.getElementById("chart-trend");
+  if(!host) return;
+  const pts = trendSeries();
+  if(pts.length < 2){
+    host.innerHTML = '<p class="chart-empty">La gráfica de evolución aparece al cerrar el primer periodo. Vaya a «Histórico» y pulse «Cerrar periodo actual».</p>';
+    return;
+  }
+  const W=760, H=230, L=42, Rp=16, T=18, B=44;
+  const iw = W-L-Rp, ih = H-T-B;
+  const x = i => L + (pts.length===1 ? iw/2 : i*(iw/(pts.length-1)));
+  const y = v => T + ih - (v/100)*ih;
+
+  let grid="";
+  [0,25,50,75,100].forEach(v=>{
+    grid += '<line class="gridline" x1="'+L+'" y1="'+y(v)+'" x2="'+(W-Rp)+'" y2="'+y(v)+'"></line>';
+    if(v%50===0) grid += '<text class="axis-txt" x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+v+' %</text>';
+  });
+
+  const line = pts.map((p,i)=> (i?"L":"M")+x(i).toFixed(1)+" "+y(p.pct).toFixed(1)).join(" ");
+  const area = line + " L"+x(pts.length-1).toFixed(1)+" "+y(0)+" L"+x(0).toFixed(1)+" "+y(0)+" Z";
+
+  const step = pts.length > 8 ? 2 : 1;
+  const dots = pts.map((p,i)=>
+    '<circle class="series-dot" cx="'+x(i).toFixed(1)+'" cy="'+y(p.pct).toFixed(1)+'" r="'+(p.live?5.5:4.5)+'"'+(p.live?' stroke-dasharray="3 2"':'')+'></circle>'+
+    '<text class="series-val" x="'+x(i).toFixed(1)+'" y="'+(y(p.pct)-11).toFixed(1)+'" text-anchor="middle">'+p.pct+'</text>'+
+    (i%step===0 || i===pts.length-1
+      ? '<text class="axis-txt" x="'+x(i).toFixed(1)+'" y="'+(H-B+20)+'" text-anchor="middle">'+
+        (p.label.length>14 ? p.label.slice(0,13)+"…" : p.label)+'</text>' : '')
+  ).join("");
+
+  host.innerHTML =
+    '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Evolución del porcentaje de indicadores dentro de meta">'+
+      grid+
+      '<path class="series-area" d="'+area+'"></path>'+
+      '<path class="series-line" d="'+line+'"></path>'+
+      dots+
+      '<line class="axis" x1="'+L+'" y1="'+(T+ih)+'" x2="'+(W-Rp)+'" y2="'+(T+ih)+'"></line>'+
+    '</svg>';
+}
+
+function renderCharts(){ renderDonut(); renderFnBars(); renderTrend(); }
+
+/* ===================== Histórico ===================== */
+function snapshot(){
+  let label = (data.meta.periodo || "").trim();
+  if(!label){
+    label = prompt("Nombre del periodo que va a cerrar (por ejemplo, 3.er trimestre 2026):", "") || "";
+    label = label.trim();
+    if(!label) return;
+  }
+  const c = counts(), wd = c.ok+c.warn+c.bad;
+  if(wd === 0){ alert("No hay indicadores con datos capturados. Capture al menos uno antes de cerrar el periodo."); return; }
+  data.history.push({
+    id: "h"+Date.now(),
+    label: label,
+    corte: data.meta.corte || new Date().toISOString().slice(0,10),
+    savedAt: new Date().toISOString(),
+    counts: c,
+    pct: Math.round(c.ok/wd*100),
+    values: JSON.parse(JSON.stringify(data.values))
+  });
+  save();
+  renderHist(); renderCharts();
+}
+
+function deletePeriod(id){
+  const h = data.history.find(x=>x.id===id);
+  if(!h) return;
+  if(!confirm("Se eliminará el periodo «"+h.label+"» del histórico. ¿Continuar?")) return;
+  data.history = data.history.filter(x=>x.id!==id);
+  save(); renderHist(); renderCharts();
+}
+
+function restorePeriod(id){
+  const h = data.history.find(x=>x.id===id);
+  if(!h) return;
+  if(!confirm("Se cargarán en el módulo de captura las cifras del periodo «"+h.label+"». Las cifras actuales se reemplazarán. ¿Continuar?")) return;
+  data.values = JSON.parse(JSON.stringify(h.values));
+  data.meta.periodo = h.label;
+  data.meta.corte = h.corte;
+  save();
+  document.getElementById("periodo").value = h.label;
+  document.getElementById("corte").value = h.corte;
+  renderForms(); renderSummary(); renderLedger(); renderCharts();
+}
+
+function renderHist(){
+  updateStoreState();
+  const per = document.getElementById("hist-periods");
+  const mat = document.getElementById("hist-matrix");
+  if(!per) return;
+
+  if(!data.history.length){
+    per.innerHTML = '<p class="chart-empty">Todavía no hay periodos cerrados. Capture las cifras del periodo y pulse «Cerrar periodo actual» para guardar la primera fotografía.</p>';
+    mat.innerHTML = '<p class="chart-empty">La matriz comparativa se construye con los periodos cerrados.</p>';
+    return;
+  }
+
+  per.innerHTML =
+    '<table class="htable"><thead><tr>'+
+      '<th>Periodo</th><th>Corte</th><th>Dentro de meta</th><th>En riesgo</th><th>Fuera de meta</th><th>Sin datos</th><th>Cumplimiento</th><th>Acciones</th>'+
+    '</tr></thead><tbody>'+
+    data.history.map(h=>
+      '<tr><td>'+h.label+'</td><td class="n">'+h.corte+'</td>'+
+      '<td class="n">'+h.counts.ok+'</td><td class="n">'+h.counts.warn+'</td>'+
+      '<td class="n">'+h.counts.bad+'</td><td class="n">'+h.counts.none+'</td>'+
+      '<td class="n"><b>'+h.pct+' %</b></td>'+
+      '<td><button class="btn" data-restore="'+h.id+'">Cargar</button> '+
+          '<button class="btn" data-del="'+h.id+'">Eliminar</button></td></tr>').join("")+
+    '</tbody></table>';
+
+  const cols = data.history.slice(-10);
+  mat.innerHTML = '<div class="scrollx"><table class="htable"><thead><tr><th class="kpi">Indicador</th>'+
+    cols.map(h=>'<th class="n">'+h.label+'</th>').join("")+'</tr></thead><tbody>'+
+    K.map(k=>{
+      const cells = cols.map(h=>{
+        const v = h.values[k.id]||{};
+        const a = v.num===""||v.num===undefined?null:Number(v.num);
+        const b = v.den===""||v.den===undefined?null:Number(v.den);
+        if(a===null||b===null||!(b>0)) return '<td class="n" style="color:var(--ink-3)">—</td>';
+        const value = k.mode==="pct" ? (a/b)*100 : (a/b);
+        let st;
+        if(k.dir==="up") st = value>=k.target?"ok":(value>=k.target*0.9?"warn":"bad");
+        else st = value<=k.target?"ok":(value<=k.target*1.6?"warn":"bad");
+        const color = st==="ok"?"var(--ok)":(st==="warn"?"var(--warn)":"var(--bad)");
+        return '<td class="n"><i class="cell-dot" style="background:'+color+'"></i>'+value.toFixed(1)+' '+unitLabel(k.unit)+'</td>';
+      }).join("");
+      return '<tr><td class="kpi"><span class="code">'+k.code+'</span><br>'+k.name+'</td>'+cells+'</tr>';
+    }).join("")+'</tbody></table></div>';
+
+  per.querySelectorAll("[data-del]").forEach(b=> b.addEventListener("click", ()=>deletePeriod(b.dataset.del)));
+  per.querySelectorAll("[data-restore]").forEach(b=> b.addEventListener("click", ()=>restorePeriod(b.dataset.restore)));
+}
+
+/* ===================== Vinculación de archivo ===================== */
+async function linkFile(){
+  if(!fsSupported()){
+    alert("Este navegador no permite que la página escriba archivos. Funciona en Chrome o Edge de escritorio, abriendo el archivo .html desde su equipo. Mientras tanto use «Exportar respaldo».");
+    return;
+  }
+  try{
+    const h = await window.showSaveFilePicker({
+      suggestedName: "indicadores-boomslang.json",
+      types: [{description:"Datos del tablero", accept:{"application/json":[".json"]}}]
+    });
+    fileHandle = h; fileLinked = true; filePending = false;
+    await idbSet("fileHandle", h);
+    await writeFile();
+    updateStoreState();
+  }catch(e){
+    if(e && e.name === "AbortError") return;
+    alert("No fue posible vincular el archivo. Esto ocurre cuando la página se abre incrustada en otro sitio. Descargue el archivo .html y ábralo directamente en Chrome o Edge.");
+  }
+}
+async function relinkFile(){
+  if(!fileHandle) return;
+  try{
+    const perm = await fileHandle.requestPermission({mode:"readwrite"});
+    if(perm === "granted"){
+      fileLinked = true; filePending = false;
+      const txt = await (await fileHandle.getFile()).text();
+      if(txt.trim()){
+        const fromFile = normalize(JSON.parse(txt));
+        if(weight(fromFile) > weight(data)) data = fromFile;
+      }
+      save();
+      ["org","periodo","corte"].forEach(f=>{ document.getElementById(f).value = data.meta[f]||""; });
+      renderForms(); renderSummary(); renderLedger(); renderCharts(); renderHist();
+    }
+  }catch(e){}
+  updateStoreState();
+}
+async function unlinkFile(){
+  fileHandle = null; fileLinked = false; filePending = false;
+  await idbDel("fileHandle");
+  updateStoreState();
+}
+
+/* ===================== Eventos ===================== */
+function bind(){
+  ["org","periodo","corte"].forEach(f=>{
+    const el = document.getElementById(f);
+    el.value = data.meta[f] || "";
+    el.addEventListener("input", ()=>{ data.meta[f]=el.value; save(); });
+  });
+
+  const sel = document.getElementById("f-fn");
+  sel.innerHTML = '<option value="all">Todas las funciones</option>' +
+    Object.keys(FN).map(x=>'<option value="'+x+'">'+FN[x]+'</option>').join("");
+
+  ["f-fn","f-status"].forEach(id=> document.getElementById(id).addEventListener("change", renderLedger));
+  document.getElementById("f-prio").addEventListener("change", renderLedger);
+
+  document.getElementById("forms").addEventListener("input", e=>{
+    const t = e.target;
+    if(t.tagName!=="INPUT" || !t.dataset.k) return;
+    const id = t.dataset.k, f = t.dataset.f;
+    data.values[id] = data.values[id] || {};
+    data.values[id][f] = t.value === "" ? "" : t.value;
+    save();
+    const k = K.find(x=>x.id===id);
+    updateLive(k);
+    renderSummary();
+    renderCharts();
+  });
+
+  const views = {
+    dash:{tab:document.getElementById("tab-dash"),  view:document.getElementById("view-dash")},
+    input:{tab:document.getElementById("tab-input"),view:document.getElementById("view-input")},
+    hist:{tab:document.getElementById("tab-hist"),  view:document.getElementById("view-hist")}
+  };
+  function show(which){
+    Object.keys(views).forEach(key=>{
+      const on = key===which;
+      views[key].tab.setAttribute("aria-selected", on);
+      views[key].view.classList.toggle("hidden", !on);
+    });
+    if(which==="dash"){ renderSummary(); renderLedger(); renderCharts(); }
+    if(which==="hist"){ renderHist(); }
+    window.scrollTo({top:0, behavior:"instant"});
+  }
+  Object.keys(views).forEach(key=> views[key].tab.addEventListener("click", ()=>show(key)));
+  document.getElementById("btn-go-input").addEventListener("click", ()=>show("input"));
+  document.getElementById("btn-snapshot").addEventListener("click", snapshot);
+  document.getElementById("btn-link").addEventListener("click", linkFile);
+  document.getElementById("btn-relink").addEventListener("click", relinkFile);
+  document.getElementById("btn-unlink").addEventListener("click", unlinkFile);
+  document.getElementById("btn-print").addEventListener("click", ()=>window.print());
+
+  const dlg = document.getElementById("dlg");
+  const dlgArea = document.getElementById("dlg-area");
+  const dlgOk = document.getElementById("dlg-ok");
+  document.getElementById("dlg-cancel").addEventListener("click", ()=>dlg.close());
+
+  document.getElementById("btn-export").addEventListener("click", async ()=>{
+    const json = JSON.stringify(data, null, 2);
+    const name = "indicadores-ciberseguridad-" + (data.meta.corte || new Date().toISOString().slice(0,10)) + ".json";
+    let saved = false;
+    try{
+      const downloads = await claude.use("downloads");
+      if(downloads){ await downloads.save({filename:name, data:json}); saved = true; }
+    }catch(e){ saved = false; }
+    if(!saved){
+      document.getElementById("dlg-title").textContent = "Respaldo de los datos";
+      document.getElementById("dlg-text").textContent = "Copie este texto y guárdelo en un archivo .json. Podrá volver a cargarlo con «Importar respaldo».";
+      dlgArea.value = json; dlgArea.readOnly = true;
+      dlgOk.classList.add("hidden");
+      dlg.showModal(); dlgArea.select();
+    }
+  });
+
+  document.getElementById("btn-import").addEventListener("click", ()=>{
+    document.getElementById("dlg-title").textContent = "Importar respaldo";
+    document.getElementById("dlg-text").textContent = "Pegue aquí el contenido de un respaldo guardado. Reemplazará los datos actuales.";
+    dlgArea.value = ""; dlgArea.readOnly = false;
+    dlgOk.classList.remove("hidden");
+    dlg.showModal(); dlgArea.focus();
+  });
+
+  dlgOk.addEventListener("click", ()=>{
+    try{
+      const p = JSON.parse(dlgArea.value);
+      if(!p || typeof p!=="object" || !p.values) throw new Error("formato");
+      data.meta = Object.assign({org:"",periodo:"",corte:""}, p.meta||{});
+      data.values = p.values;
+      data.history = Array.isArray(p.history) ? p.history : [];
+      save();
+      ["org","periodo","corte"].forEach(f=>{ document.getElementById(f).value = data.meta[f]||""; });
+      renderForms(); renderSummary(); renderLedger(); renderCharts(); renderHist();
+      dlg.close();
+    }catch(err){
+      document.getElementById("dlg-text").textContent = "El texto pegado no es un respaldo válido. Debe ser el contenido completo de un archivo exportado desde esta herramienta.";
+    }
+  });
+
+  document.getElementById("btn-clear").addEventListener("click", ()=>{
+    if(!confirm("Se borrarán todas las cifras capturadas en este navegador. ¿Continuar?")) return;
+    data = { meta:{org:"",periodo:"",corte:""}, values:{}, history:[] };
+    save();
+    ["org","periodo","corte"].forEach(f=>{ document.getElementById(f).value=""; });
+    renderForms(); renderSummary(); renderLedger(); renderCharts(); renderHist();
+  });
+}
+
+/* ===================== Arranque ===================== */
+(async function start(){
+  await load();
+  bind();
+  renderForms();
+  renderSummary();
+  renderLedger();
+  renderCharts();
+  renderHist();
+})();
+</script>
+</body>
+</html>
